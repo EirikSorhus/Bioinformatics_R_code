@@ -1,0 +1,77 @@
+---
+title: "Untitled Document"
+author: "Eirik Sørhus"
+date: "`r Sys.Date()`"
+output: 
+  rmdformats::downcute:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: hide
+    fig_caption: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunkset(echo = T, 
+                      warning = F, 
+                      message = F)
+```
+
+```{r tema, include=FALSE}
+if(!require(rmdformats)) install.packages("rmdformats",repos = "http://cran.us.r-project.org")
+# Laster ned pakken med formatet for dokumentet i tilfelle pakken ikke allerede er installert
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```
+
+```{r }
+
+```

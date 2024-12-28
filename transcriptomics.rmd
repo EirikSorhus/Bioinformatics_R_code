@@ -1,0 +1,185 @@
+---
+title: "Untitled Document"
+author: "Eirik Sørhus"
+date: "`r Sys.Date()`"
+output: 
+  rmdformats::downcute:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+    code_folding: hide
+    fig_caption: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunkset(echo = T, 
+                      warning = F, 
+                      message = F)
+```
+
+```{r tema, include=FALSE}
+if(!require(rmdformats)) install.packages("rmdformats",repos = "http://cran.us.r-project.org")
+# Laster ned pakken med formatet for dokumentet i tilfelle pakken ikke allerede er installert
+```
+
+## Loading Data
+```{r Reading file}
+library(tidyverse)
+Asp <- read_tsv("AspWood/K1-01_sortmerna_trimmomatic/quant.sf")
+```
+
+```{r Finding Counts}
+# Method 1
+counts <- counts %>% 
+  pivot_longer(cols = -Genes, names_to = "Samples", values_to = "Expression") %>%
+  separate(Genes, into = c("Genes"), sep = "\\.", extra = "drop") %>% 
+  group_by(Genes, Samples) %>%
+  summarise(Expression = sum(Expression)) %>%
+  pivot_wider(names_from = "Samples", values_from = "Expression")
+
+# Method 2
+counts <- counts %>% 
+  separate(Genes, into = c("Genes"), sep = "\\.", extra = "drop") %>% 
+  group_by(Genes) %>%
+  summarise_if(is.numeric, sum)
+```
+
+```{r reshaping}
+counts.long <- counts %>% 
+  pivot_longer(cols = -Genes, names_to = "Samples", values_to = "Expression")
+```
+
+## Exploring teh count data and log-transform
+Dotplot of counts. The x-axis is the samples and y-axis is expression levels. The dots represent counts.
+```{r dotplot not log or normelized}
+ggplot(counts.long, 
+       aes(x = Samples,
+           y = Expression)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+A boxplot with expression as y-axis and samples as x-axis.
+```{r box plot not log og normelized}
+ggplot(counts.long, 
+       aes(x = Samples,
+           y = Expression)) +
+  geom_boxplot(outliers = F) +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+Boxplot, same as over, but the expression values are log2-transformed. log2(counts + 1) is used due to many values are zero.
+```{r box plot log transformed not normelized}
+ggplot(counts.long, 
+         aes(x = Samples,
+             y = log2(Expression+1))) +
+  geom_boxplot(outliers = F) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(y = "Expression")
+```
+
+## Normalization
+Makes a DEseq2 dataset and normelizes it
+```{r}
+library(DESeq2)
+
+counts.mat <- counts %>% 
+  column_to_rownames(var = "Genes") %>% 
+  as.matrix() %>% 
+  round()
+
+dds <- DESeq2::DESeqDataSetFromMatrix(countData = counts.mat,
+                              colData = data.frame(conditions = as.factor(colnames(counts.mat))),
+                              design = ~ conditions)
+
+dds <- DESeq2::estimateSizeFactors(dds)
+```
+
+Boxplot with normalized data and log2 transformed
+```{r box plot normalized and log}
+DESeq2::counts(dds, normalized=TRUE) %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var = "Genes") %>%  
+  pivot_longer(cols = -Genes, names_to = "Samples", values_to = "Expression") %>% 
+  mutate(Expression = log2(Expression + 1)) %>% 
+  ggplot(aes(x = Samples, y = Expression)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+## Varianze stabelizing transformation (VST)
+Varianze stabelizing transforming the data and making the min value 0
+```{r}
+vst <- DESeq2::varianceStabilizingTransformation(counts.mat)
+vst <- vst - min(vst)
+```
+
+boksplot with VST normalized date and log2 transformed expression
+```{r}
+vst %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var = "Genes") %>%  
+  pivot_longer(cols = -Genes, names_to = "Samples", values_to = "Expression") %>% 
+  mutate(Expression = log2(Expression + 1)^2) %>% # Squaring the log-transformed transformation to make it visually comparable to previous boxplots
+  ggplot(aes(x = Samples, y = Expression)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+## Removing lowly expressed genes
+removing genes with expression less than 10
+```{r}
+counts.long %>% 
+  group_by(Genes) %>% 
+  summarise(Expression = sum(Expression)) %>% 
+  filter(Expression < 10) -> lowgenes
+
+
+# Removing genes with less than 10 mapped reads:
+vst <- vst[!(rownames(vst) %in% lowgenes),]
+```
+
+## Looking at data
+The plots below are the expression of the genes over time (samples are from different times)
+```{r gene SUS6: Potra2n4c9149}
+vst %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var = "Genes") %>%  
+  pivot_longer(cols = -Genes, names_to = "Samples", values_to = "Expression") %>% 
+  mutate(Expression = log2(Expression + 1)) %>% 
+  filter(Genes == "Potra2n4c9149") %>% 
+  ggplot(aes(x = Samples,
+             y = Expression,
+             group = Genes)) +
+  geom_line(linewidth = 2) +
+  labs(y = "Expression (VST)",
+       title = "SUS6: Potra2n4c9149") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   vjust = 0.5, 
+                                   hjust=1),
+        panel.border = element_rect(fill=NA))
+```
+
+```{r gene CDC2: Potra2n16c30563}
+vst %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var = "Genes") %>%  
+  pivot_longer(cols = -Genes, names_to = "Samples", values_to = "Expression") %>% 
+  mutate(Expression = log2(Expression + 1)) %>% 
+  filter(Genes == "Potra2n16c30563") %>% 
+  ggplot(aes(x = Samples,
+             y = Expression,
+             group = Genes)) +
+  geom_line(linewidth = 2) +
+  labs(y = "Expression (VST)",
+       title = "CDC2: Potra2n16c30563") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   vjust = 0.5, 
+                                   hjust=1),
+        panel.border = element_rect(fill=NA))
+```
+
