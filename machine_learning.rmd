@@ -1,6 +1,6 @@
 ---
 title: "Untitled Document"
-author: "Eirik Sørhus"
+author: "Thomas Amble Karlsen and Eirik Sørhus"
 date: "`r Sys.Date()`"
 output: 
   rmdformats::downcute:
