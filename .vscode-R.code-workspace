@@ -1,8 +1,7 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-	"settings": {}
+    "folders": [
+        {
+            "path": "bioinformatics_r_code"
+        }
+    ]
 }
