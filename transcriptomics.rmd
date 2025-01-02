@@ -1,5 +1,5 @@
 ---
-title: "Untitled Document"
+title: "Transcriptomics"
 author: "Thomas Amble Karlsen and Eirik Sørhus"
 date: "`r Sys.Date()`"
 output: 
@@ -14,7 +14,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunkset(echo = T, 
+knitr::opts_chunk$set(echo = T, 
                       warning = F, 
                       message = F)
 ```
@@ -27,8 +27,30 @@ if(!require(rmdformats)) install.packages("rmdformats",repos = "http://cran.us.r
 ## Loading Data
 ```{r Reading file}
 library(tidyverse)
-Asp <- read_tsv("AspWood/K1-01_sortmerna_trimmomatic/quant.sf")
 ```
+
+```{r}
+samples <- list.files("Data/AspWood/AspWood")
+
+counts <- tibble()
+for (sample in samples) {
+  file <- paste0("Data/AspWood/AspWood/", sample, "/quant.sf")
+  
+  sample.trimmed <- gsub("_sortmerna_trimmomatic", "", sample)
+  
+  c <- read_tsv(file) %>%
+    select(Name, NumReads) %>%
+    rename(Genes = Name, !!sym(sample.trimmed) := NumReads)
+  
+  if (sample == samples[1]) {
+    counts <- c 
+  } else {
+    counts <- cbind(counts, c %>% select(-Genes))
+  }
+}
+
+```
+
 
 ```{r Finding Counts}
 # Method 1

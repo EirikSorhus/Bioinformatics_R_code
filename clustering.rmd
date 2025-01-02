@@ -1,5 +1,5 @@
 ---
-title: "Untitled Document"
+title: "Clustering"
 author: "Thomas Amble Karlsen and Eirik Sørhus"
 date: "`r Sys.Date()`"
 output: 
@@ -14,7 +14,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunkset(echo = T, 
+knitr::opts_chunk$set(echo = T, 
                       warning = F, 
                       message = F)
 ```
@@ -104,7 +104,7 @@ aspwood.tree %>%
 ADF <- data.frame(row.names = colnames(aspwood), # Removing row names
                   Stages = aspwood.stages)
 
-pheatmap(aspwood,
+heatmap(aspwood,
          scale = "row", # Scaling rows, not columns
          cluster_cols = aspwood.tree,
          cluster_rows = T,
